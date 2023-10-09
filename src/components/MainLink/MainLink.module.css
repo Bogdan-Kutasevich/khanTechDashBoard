@@ -1,0 +1,20 @@
+.active {
+    color: #2164cb;
+    text-decoration: none;
+    border: 1px solid #2164cb;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+}
+
+.nonActive {
+    color: #000000;
+    text-decoration: none;
+    height: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px;
+}

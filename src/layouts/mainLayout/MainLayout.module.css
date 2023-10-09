@@ -1,0 +1,15 @@
+.layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+.outlet {
+    padding-top: 40px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+}

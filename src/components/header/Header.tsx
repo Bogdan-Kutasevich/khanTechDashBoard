@@ -5,8 +5,7 @@ export const Header = () => (
   <header className={styles.header}>
     <h2 className={styles.title}>Dash board</h2>
     <nav className={styles.nav}>
-      <MainLink to="/">Home</MainLink>
-      <MainLink to="/createPost">Create post</MainLink>
+      <MainLink to="/">Create post</MainLink>
       <MainLink to="/updatePosts">Update posts</MainLink>
       <MainLink to="/logout">Logout</MainLink>
     </nav>

@@ -1,8 +1,8 @@
-import {ChangeEvent, useEffect, useState} from "react";
-import axios from "axios";
+import {ChangeEvent, useContext, useEffect, useState} from "react";
 import {Button, CircularProgress, styled} from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import {NotificationSuccess} from "../notificationSuccess/NotificationSuccess.tsx";
+import {NotificationContext} from "../../context/NotificationContext.tsx";
+import {api} from "../../services/apiService/apiService.ts";
 
 type UploadImageProps = {
   handleSetImagePath: (path: string) => void;
@@ -23,15 +23,9 @@ const VisuallyHiddenInput = styled('input')({
 export const UploadImage = ({handleSetImagePath}: UploadImageProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isFetching, setFetching] = useState(false)
-  const [fetchError, setFetchError] = useState('')
-  const [openSnackBar, setOpenSnackBar] = useState(false);
+  const { handleSetSnackBarError, handleErrorOpenSnackBar} = useContext(NotificationContext)
 
-  const handleOpenSnackBar = () => {
-    setOpenSnackBar(true);
-  };
-  const handleCloseSnackBar = () => {
-    setOpenSnackBar(false);
-  };
+
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       const file = event.target.files[0];
@@ -48,26 +42,20 @@ export const UploadImage = ({handleSetImagePath}: UploadImageProps) => {
     setFetching(true)
     try {
       if (!selectedFile) {
-        setFetchError('Choose image first')
-        handleOpenSnackBar()
+        handleSetSnackBarError('Choose image first')
+        handleErrorOpenSnackBar()
         setFetching(false)
         return;
       }
 
       const formData = new FormData();
       formData.append('image', selectedFile);
-
-      await axios.post('http://localhost:3001/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await api.uploadImage(formData)
       const path = `http://localhost:3001/${selectedFile.name}`;
       handleSetImagePath(path);
-      setFetching(false)
     } catch (error) {
-      setFetchError('upload false')
-      handleOpenSnackBar()
+      handleSetSnackBarError('upload false try again')
+      handleErrorOpenSnackBar()
     } finally {
       setFetching(false)
     }
@@ -80,7 +68,6 @@ export const UploadImage = ({handleSetImagePath}: UploadImageProps) => {
         <VisuallyHiddenInput type="file" onChange={(event) => handleFileChange(event)}/>
       </Button>
       {isFetching && <CircularProgress />}
-      <NotificationSuccess handleCloseSnackBar={handleCloseSnackBar} message={fetchError} openSnackBar={openSnackBar} />
     </>
   )
 };

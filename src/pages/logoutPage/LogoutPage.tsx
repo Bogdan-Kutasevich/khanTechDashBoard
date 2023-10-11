@@ -3,10 +3,10 @@ import {AuthContext} from "../../context/AuthContext.tsx";
 import {Box, Button, Typography} from "@mui/material";
 
 export const LogoutPage = () => {
-  const {updateIsAuth} = useContext(AuthContext)
+  const {handleUpdateIsAuth} = useContext(AuthContext)
   const logout = () => {
     localStorage.removeItem('khanAuthToken');
-    updateIsAuth(false)
+    handleUpdateIsAuth(false)
   }
   return (
     <Box sx={{

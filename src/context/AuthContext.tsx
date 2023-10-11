@@ -1,26 +1,23 @@
-import {createContext, ReactNode, useEffect, useState} from 'react';
-import axios, {AxiosResponse} from "axios";
+import {createContext, ReactNode, useContext, useEffect, useState} from 'react';
 import {isTypicalError} from "../utils/errorTypeHelper.ts";
-import {NotificationSuccess} from "../components/notificationSuccess/NotificationSuccess.tsx";
-import {NotificationError} from "../components/notificationError/NotificationError.tsx";
+import {NotificationContext} from "./NotificationContext.tsx";
+import {api} from "../services/apiService/apiService.ts";
 
 interface AuthContextType {
   isAuth: boolean;
-  updateIsAuth: (isAuth: boolean) => void;
+  handleUpdateIsAuth: (isAuth: boolean) => void;
   authToken: string;
   isFetchingAuth: boolean;
-  fetchingAuthError: string;
 }
 
-const defaultvalue = {
+const defaultValue = {
   isAuth: false,
-  updateIsAuth: () => '',
+  handleUpdateIsAuth: () => '',
   authToken: '',
   isFetchingAuth: false,
-  fetchingAuthError: ''
 }
 
-export const AuthContext = createContext<AuthContextType>(defaultvalue);
+export const AuthContext = createContext<AuthContextType>(defaultValue);
 
 interface ProviderProps {
   children: ReactNode;
@@ -30,24 +27,8 @@ export const AuthContextProvider = ({ children }: ProviderProps) => {
   const [isAuth, setAuth] = useState<boolean>(false);
   const [authToken, setAuthToken] = useState<string>('');
   const [isFetchingAuth, setIsFetchingAuth] = useState(true)
-  const [fetchingAuthError, setFetchingAuthError] = useState('')
-  const [openSnackBar, setOpenSnackBar] = useState(false);
-  const [snackBarMessage, setSnackBarMessage] = useState('')
-  const [openErrorSnackBar, setErrorOpenSnackBar] = useState(false);
 
-  const handleOpenSnackBar = () => {
-    setOpenSnackBar(true);
-  };
-  const handleCloseSnackBar = () => {
-    setOpenSnackBar(false);
-  };
-
-  const handleErrorOpenSnackBar = () => {
-    setErrorOpenSnackBar(true);
-  };
-  const handleErrorCloseSnackBar = () => {
-    setErrorOpenSnackBar(false);
-  };
+  const {handleSetSnackBarMessage, handleSetSnackBarError, handleSuccessOpenSnackBar, handleErrorOpenSnackBar} = useContext(NotificationContext)
 
   const checkAuth = async () => {
     const token = localStorage.getItem('khanAuthToken');
@@ -65,44 +46,34 @@ export const AuthContextProvider = ({ children }: ProviderProps) => {
   }
   const sendRequest = async (token: string) => {
     try {
-      setIsFetchingAuth(true)
-      const response: AxiosResponse = await axios({
-        method: 'GET',
-        url: 'http://localhost:3001/admin/isAuth',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      setIsFetchingAuth(false)
-      setSnackBarMessage('auth successfully')
-      handleOpenSnackBar()
+      const response = await api.isAuth(token)
+      handleSetSnackBarMessage('auth successfully')
+      handleSuccessOpenSnackBar()
       return response.data.authorized
     } catch (error) {
-      setAuth(false)
-      setIsFetchingAuth(false)
       if (isTypicalError(error)) {
-        setFetchingAuthError(error.data.message);
+        handleSetSnackBarError(error.response.data);
       } else {
-        setFetchingAuthError('auto auth invalid please sign in');
+        handleSetSnackBarError('auto auth invalid please sign in');
       }
+      setAuth(false)
       handleErrorOpenSnackBar()
+    } finally {
+      setIsFetchingAuth(false)
     }
   }
   useEffect(() => {
     checkAuth();
   }, [isAuth]);
-  const updateIsAuth = (isAuth: boolean) => {
+  const handleUpdateIsAuth = (isAuth: boolean) => {
     setAuth(isAuth);
   };
 
   return (
     <>
-      <AuthContext.Provider value={{ isAuth, authToken, updateIsAuth, isFetchingAuth, fetchingAuthError }}>
+      <AuthContext.Provider value={{ isAuth, authToken, handleUpdateIsAuth, isFetchingAuth }}>
         {children}
       </AuthContext.Provider>
-      <NotificationSuccess handleCloseSnackBar={handleCloseSnackBar} message={snackBarMessage} openSnackBar={openSnackBar} />
-      <NotificationError handleCloseSnackBar={handleErrorCloseSnackBar} message={fetchingAuthError} openSnackBar={openErrorSnackBar}/>
     </>
   );
 };

@@ -111,7 +111,7 @@ export const UpdatePostsPage = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        width: '50%',
+        width: '80%',
         height: '100%'
       }}>
         <Box sx={{

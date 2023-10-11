@@ -12,7 +12,7 @@ export const PostCard = ({post, handleSetIsUpdatingProcess, handleSetUpdatingPos
     handleSetUpdatingPost(post)
   }
   return (
-    <Card sx={{width: 150, height: 300, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+    <Card sx={{width: 250, height: 300, display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
       <CardActionArea>
         {post.image ?
           <CardMedia
@@ -25,8 +25,8 @@ export const PostCard = ({post, handleSetIsUpdatingProcess, handleSetUpdatingPos
             sx={{height: '140px'}}
           />}
         <CardContent>
-          <Typography gutterBottom variant="h5" component="div">
-            {post.title}
+          <Typography gutterBottom component="div">
+            {post.title.slice(0, 20)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {post.postText.slice(0, 40)}

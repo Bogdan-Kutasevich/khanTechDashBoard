@@ -13,29 +13,12 @@ import {useContext, useState} from "react";
 import axios from "axios";
 import {AuthContext} from "../../context/AuthContext.tsx";
 import {isTypicalError} from "../../utils/errorTypeHelper.ts";
-import {NotificationSuccess} from "../notificationSuccess/NotificationSuccess.tsx";
-import {NotificationError} from "../notificationError/NotificationError.tsx";
+import {NotificationContext} from "../../context/NotificationContext.tsx";
 export const SignInForm = () => {
   const [isFetching, setFetching] = useState(false)
-  const [fetchingError, setFetchingError] = useState('')
-  const [openSnackBar, setOpenSnackBar] = useState(false);
-  const [snackBarMessage, setSnackBarMessage] = useState('')
-  const [openErrorSnackBar, setErrorOpenSnackBar] = useState(false);
-  const {updateIsAuth} = useContext(AuthContext)
-  const handleOpenSnackBar = () => {
-    setOpenSnackBar(true);
-  };
-  const handleCloseSnackBar = () => {
-    setOpenSnackBar(false);
-  };
-
-  const handleErrorOpenSnackBar = () => {
-    setErrorOpenSnackBar(true);
-  };
-  const handleErrorCloseSnackBar = () => {
-    setErrorOpenSnackBar(false);
-  };
-  const {
+  const {handleSetSnackBarError, handleErrorOpenSnackBar, handleSetSnackBarMessage, handleSuccessOpenSnackBar} = useContext(NotificationContext)
+  const {handleUpdateIsAuth} = useContext(AuthContext)
+    const {
     register, handleSubmit, reset, formState: { errors }
   } = useForm<SignInFormsFields>({
     defaultValues: {
@@ -53,17 +36,17 @@ export const SignInForm = () => {
       setFetching(true)
       const response = await axios.post('http://localhost:3001/admin/log-in', {username, password});
       localStorage.setItem('khanAuthToken', response.data.jwt);
-      updateIsAuth(true)
+      handleUpdateIsAuth(true)
       reset();
       setFetching(false)
-      setSnackBarMessage('auth successfully')
-      handleOpenSnackBar()
+      handleSetSnackBarMessage('auth successfully')
+      handleSuccessOpenSnackBar()
     } catch (error) {
       setFetching(false)
       if (isTypicalError(error)) {
-        setFetchingError(error.data.message);
+        handleSetSnackBarError(error.response.data);
       } else {
-        setFetchingError('password or username invalid');
+        handleSetSnackBarError('password or username invalid');
       }
       handleErrorOpenSnackBar()
     }
@@ -144,8 +127,6 @@ export const SignInForm = () => {
           )}
         </Box>
       </Box>
-    <NotificationSuccess handleCloseSnackBar={handleCloseSnackBar} message={snackBarMessage} openSnackBar={openSnackBar} />
-    <NotificationError handleCloseSnackBar={handleErrorCloseSnackBar} message={fetchingError} openSnackBar={openErrorSnackBar}/>
   </>
   );
 };

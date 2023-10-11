@@ -7,24 +7,25 @@ import {Box, CircularProgress} from "@mui/material";
 
 function App() {
   const {isAuth, isFetchingAuth} = useContext(AuthContext)
-  return (
-    <>
-      { isAuth && <RouterProvider router={router}/>}
-      { !isAuth && !isFetchingAuth && <SignInForm />}
-      {isFetchingAuth && (
-        <Box sx={{
-          height:'100vh',
-          width: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <CircularProgress />
-        </Box>
-      )}
-    </>
+  if (isFetchingAuth) {
+    return (
+      <Box sx={{
+        height:'100vh',
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
 
-  )
+  if (isAuth) {
+    return <RouterProvider router={router}/>
+  }
+
+  return <SignInForm />
 }
 
 export default App

@@ -1,43 +1,74 @@
-import {ChangeEvent, useEffect, useState} from "react";
-import axios from "axios";
-import {
-  Box,
-  Button,
-  Card,
-  CardActionArea,
-  CardActions,
-  CardContent,
-  CardMedia,
-  Pagination,
-  Typography
-} from "@mui/material";
-type Post = {
-  adminId: number
-  categories: string
-  createdAt: string
-  id: number
-  image: string
-  postText: string
-  readTime: string
-  title: string
-  updatedAt: string
-}
+import {ChangeEvent, useContext, useEffect, useState} from "react";
+import {Box, CircularProgress, Pagination, Typography} from "@mui/material";
+import {NotificationContext} from "../../context/NotificationContext.tsx";
+import {api} from "../../services/apiService/apiService.ts";
+import {Post} from "./types.ts";
+import {isTypicalError} from "../../utils/errorTypeHelper.ts";
+import {PostsList} from "../../components/postsList/PostsList.tsx";
+import {UpdatePostForm} from "../../components/updatePostForm/UpdatePostForm.tsx";
+import {AuthContext} from "../../context/AuthContext.tsx";
 export const UpdatePostsPage = () => {
+  const [fetchingData, setFetchingData] = useState(false)
+  const [isUpdatingProcess, setIsUpdatingProcess] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [numberOfPages, setNumberOfPages] = useState(0)
   const [postCount, setPostCount] = useState(0)
   const [currentPosts, setCurrentPosts] = useState<Post[]>([])
+  const [updatingPost, setUpdatingPost] = useState<Post>()
+  const {handleSetSnackBarError, handleErrorOpenSnackBar, handleSetSnackBarMessage, handleSuccessOpenSnackBar} = useContext(NotificationContext)
+  const {handleUpdateIsAuth} = useContext(AuthContext)
   const getPosts = async () => {
-    const response = await axios({
-      method: 'GET',
-      url: `http://localhost:3001/post/getAllPosts?page=${currentPage}`,
-    });
-    setPostCount(response.data.allPosts.count);
-    setCurrentPosts(response.data.allPosts.posts)
+    setFetchingData(true)
+    try {
+      const response = await api.getAllPosts(currentPage)
+      setPostCount(response.data.allPosts.count);
+      setCurrentPosts(response.data.allPosts.posts)
+    } catch (error) {
+      if (isTypicalError(error)) {
+        handleSetSnackBarError(error.response.data);
+      } else {
+        handleSetSnackBarError('sorry, something went wrong');
+      }
+      handleErrorOpenSnackBar()
+      setPostCount(0);
+      setCurrentPosts([])
+    } finally {
+      setFetchingData(false)
+    }
   }
+
+  const deletePost = async (postId: number) => {
+    const token = localStorage.getItem('khanAuthToken');
+
+    if (!token) {
+      handleSetSnackBarError('unauthorized')
+      handleErrorOpenSnackBar()
+      handleUpdateIsAuth(false)
+      return;
+    }
+
+    setFetchingData(true)
+    try {
+      await api.deletePost(postId, token)
+      handleSetSnackBarMessage('delete successfully')
+      handleSuccessOpenSnackBar()
+      await getPosts()
+    } catch (error) {
+      if (isTypicalError(error)) {
+        handleSetSnackBarError(error.response.data);
+        if(error.response.data === 'unauthorized') handleUpdateIsAuth(false)
+      } else {
+        handleSetSnackBarError('sorry, something went wrong');
+      }
+      handleErrorOpenSnackBar()
+    } finally {
+      setFetchingData(false)
+    }
+  }
+
   useEffect(() => {
     getPosts()
-  }, [currentPage])
+  }, [currentPage, ])
   const getNumberOfPages = () => {
     const number = Math.ceil(postCount/ currentPosts.length)
     setNumberOfPages(number)
@@ -51,52 +82,80 @@ export const UpdatePostsPage = () => {
     setCurrentPage(value);
   }
 
-  const listPosts = currentPosts.map((post) =>
-    <Card sx={{ maxWidth: 345, maxHeight: 300 }} key={post.id}>
-      <CardActionArea>
-        <CardMedia
-          component="img"
-          height="140"
-          image={post.image}
-          alt="image"
-        />
-        <CardContent>
-          <Typography gutterBottom variant="h5" component="div">
-            {post.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {post.postText.slice(0, 40)}
-          </Typography>
-        </CardContent>
-      </CardActionArea>
-      <CardActions>
-        <Button size="small" color="primary">
-          Update
-        </Button>
-        <Button size="small" color="error">
-          Delete
-        </Button>
-      </CardActions>
-    </Card>
-  );
+  const handleSetIsUpdatingProcess = (isUpdating: boolean) => {
+    setIsUpdatingProcess(isUpdating)
+  }
+
+  const handleSetUpdatingPost = (post: Post) => {
+    setUpdatingPost(post)
+  }
+
+  if (fetchingData) {
+    return (
+      <Box sx={{
+        height:'100vh',
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!isUpdatingProcess && currentPosts.length > 0) {
+    return (
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '50%',
+        height: '100%'
+      }}>
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '30px',
+          flexWrap: 'wrap',
+        }}>
+          <PostsList
+            currentPosts={currentPosts}
+            handleSetIsUpdatingProcess={handleSetIsUpdatingProcess}
+            handleSetUpdatingPost={handleSetUpdatingPost}
+            deletePost={deletePost}
+          />
+        </Box>
+        {numberOfPages > 1 && <Pagination
+          count={numberOfPages || 1}
+          sx={{marginTop: '20px'}}
+          onChange={handlePagination}
+          page={currentPage}
+        />}
+      </Box>
+    )
+  }
+
+  if (updatingPost) {
+    return <UpdatePostForm
+      updatingPost={updatingPost}
+      handleSetIsUpdatingProcess={handleSetIsUpdatingProcess}
+      getPosts={getPosts}
+    />
+  }
 
   return (
-  <Box sx={{
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '50%',
-    height: '100%'
-  }}>
     <Box sx={{
+      height:'100vh',
+      width: '100%',
       display: 'flex',
       justifyContent: 'center',
-      gap: '30px',
-      flexWrap: 'wrap',
+      alignItems: 'center'
     }}>
-      {listPosts}
+      <Typography component="h1" variant="h5">
+        No Posts
+      </Typography>
     </Box>
-    <Pagination count={numberOfPages || 1} sx={{marginTop: '20px'}} onChange={handlePagination} page={currentPage} />
-  </Box>
   )
 };
